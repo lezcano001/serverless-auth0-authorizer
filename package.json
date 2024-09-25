@@ -1,0 +1,11 @@
+{
+  "name": "sls-auth-service",
+  "version": "1.0.0",
+  "author": "Elias Lezcano",
+  "description": "Protection of API gateway using Auth0 and serverless v4",
+  "license": "MIT",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  },
+  "type": "module"
+}

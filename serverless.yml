@@ -1,0 +1,59 @@
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: serverless-auth0-authorizer
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  memorySize: 128
+  region: us-west-2
+  httpApi:
+    cors: true
+  environment:
+    AUTH0_PUBLIC_KEY: ${ssm:/aws/reference/secretsmanager/serverless-auth0-authorizer-cert}
+  
+functions:
+  # The auth lambda function, seems to be weird
+  # because we don't have triggers here, butt
+  # we trigger them in other functions
+  # using the prop, authorizer.
+  auth:
+    handler: src/handlers/auth.handler
+  # The below functions are purely for testing purposes
+  publicEndpoint:
+    handler: src/handlers/public.handler
+    events:
+      - http:
+          path: public
+          method: POST
+  privateEndpoint:
+    handler: src/handlers/private.handler
+    events:
+      - http:
+          path: private
+          method: POST
+          # Here we trigger the auth function
+          authorizer: auth
+
+resources:
+  Resources:
+    # This two GatewayResponses are needed to handle the 401 responses.
+    GatewayResponse:
+      Type: "AWS::ApiGateway::GatewayResponse"
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origins: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        ResponseType: EXPIRED_TOKEN
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+        StatusCode: '401'
+    AuthFailureGatewayResponse:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origins: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+        StatusCode: '401'
